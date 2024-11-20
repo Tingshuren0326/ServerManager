@@ -1,4 +1,13 @@
-import { app, shell, BrowserWindow, ipcMain, Tray, Menu, globalShortcut } from 'electron'
+import {
+	app,
+	shell,
+	BrowserWindow,
+	ipcMain,
+	Tray,
+	Menu,
+	globalShortcut,
+	webContents
+} from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 
@@ -11,17 +20,42 @@ import setting from '../../resources/tray/setting.png?asset'
 import info from '../../resources/tray/info.png?asset'
 import exit from '../../resources/tray/exit.png?asset'
 
-import { getVersion, getPublicIP } from './utils';
-import { useConf, Conf } from 'electron-conf/main'
+import { getVersion, getPublicIP } from './utils'
+import * as remoteMain from '@electron/remote/main'
+import { webContents } from 'electron'
 
 process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true'
 
-let mainWindow;
-let appTray;
-let showTaryMenu = false;
-let contentMenu;
+let mainWindow
+let appTray
+let showTaryMenu = false
+let contentMenu
 
-const appConfig = new Conf();
+type downloadItem = {
+	url: string
+	filePath: string
+	fileName: string
+	item: any
+	fingerPrint: string
+	current: number
+	total: number
+	speed: string
+	state: string
+	process: number
+}
+
+let downloadItems: downloadItem[] = []
+
+global.sharedAppConfig = {
+	version: getVersion(),
+	publicIP: '127.0.0.1',
+	work_dir: '',
+	backup_dir: '',
+	server_dir: '',
+	steamCmd_dir: '',
+	mods_dir: '',
+	downloadF_dir: ''
+}
 
 function createWindow(): void {
 	// 创建 browser window.
@@ -48,7 +82,7 @@ function createWindow(): void {
 		titleBarOverlay: {
 			color: 'aliceblue',
 			height: 32,
-			symbolColor: 'black',
+			symbolColor: 'black'
 		},
 		// 窗口背景色
 		backgroundColor: 'aliceblue',
@@ -94,44 +128,26 @@ function createWindow(): void {
 		mainWindow.webContents.openDevTools()
 	})
 
-	const unsubscribe =  appConfig.onDidAnyChange((newValue, oldValue) => {
-		console.log('Public IP newValue : ' + newValue + ' oldValue : ' + oldValue);
-	})
-	
-
-	trayManager();
-
-	useConf();
-
-	appConfig.registerRendererListener();
-
-	unsubscribe();
-
-	appConfig.set('version', getVersion());
-
-	mainWindow.webContents.send('update-version');
+	trayManager()
 }
 
 const gotTheLock = app.requestSingleInstanceLock()
 
 if (!gotTheLock) {
 	app.quit()
-}
-else {
+} else {
 	app.on('second-instance', (event, commandLine, workingDirectory, additionalData) => {
 		if (mainWindow) {
 			mainWindow.dialog.showMessageBox({
 				message: '此程序已经正在运行'
 			})
-			if (mainWindow.isMinimized())
-				mainWindow.restore()
+			if (mainWindow.isMinimized()) mainWindow.restore()
 			mainWindow.focus()
 		}
-	}
-	)
+	})
 
 	app.whenReady().then(() => {
-		electronApp.setAppUserModelId('com.electron')
+		remoteMain.initialize()
 
 		globalShortcut.register('Shift+i', function () {
 			mainWindow.webContents.openDevTools()
@@ -141,9 +157,9 @@ else {
 			optimizer.watchWindowShortcuts(window)
 		})
 
-		ipcMain.on('ping', () => console.log('pong'));
+		ipcMain.on('ping', () => console.log('pong'))
 
-		createWindow();
+		createWindow()
 
 		app.on('activate', function () {
 			if (BrowserWindow.getAllWindows().length === 0) createWindow()
@@ -198,8 +214,8 @@ function trayManager(): void {
 		{
 			label: '退出程序',
 			icon: exit,
-			click: () => { 
-				app.quit();
+			click: () => {
+				app.quit()
 			}
 		}
 	])
@@ -225,6 +241,61 @@ function handerTrayRightClick(): void {
 function handerTray(): void {
 	mainWindow.isVisible() ? mainWindow.hide() : mainWindow.show()
 	mainWindow.isVisible() ? mainWindow.setSkipTaskbar(false) : mainWindow.setSkipTaskbar(true)
+}
+
+function downloadFile(filePath: string, url: string, fileName, fingerPrint: string): void {
+	mainWindow.webContents.downloadURL(url)
+
+	mainWindow.webContents.sessions.once('will-download', (evevt, item, webContents) => {
+		item.setSavePath(filePath)
+
+		let download_item ={
+			url: url,
+			filePath: filePath,
+			fileName: fileName,
+			item: item,
+			fingerPrint: fingerPrint,
+			current: 0,
+			total: 0,
+			speed: '0KB/s',
+			state: '开始下载',
+			process: 0.0
+		}
+
+		downloadItems.push(download_item)
+
+		let last_current = 0;
+		let last_time = 0;
+
+		item.on('update', (evevt, state) => {
+			download_item.current = item.getReceivedBytes();
+			download_item.total = item.getTotalBytes();
+			download_item.process = (download_item.current ===0 && download_item.total === 0) ? 0.0 : download_item.current / download_item.total;
+
+			switch (state) {
+				case 'interrupted':
+					download_item.state = '下载中断';
+					download_item.speed = '0KB/s';
+					mainWindow.webContents.send('watch-download-file-state', state, download_item);
+					break;
+				case 'progressing':
+					if(item.isPaused()){
+						download_item.state = '下载暂停';
+						download_item.speed = '0KB/s';
+						mainWindow.webContents.send('watch-download-file-state', state, download_item);
+					}
+					else
+					{
+						download_item.state = '下载中';
+						download_item.speed = '0KB/s';
+						mainWindow.webContents.send('watch-download-file-state', state, download_item);
+					}
+					break;
+			}
+			last_current = download_item.current;
+			last_time = window.performance.now();
+		})
+	})
 }
 
 // 关闭窗口通知

@@ -15,7 +15,6 @@ import axios from 'axios';
 import defaultProps from './_defaultProps';
 import './App.css'
 import Server from '@renderer/pages/Server';
-import GridCard from './components/GridCard';
 
 function App(): JSX.Element {
 	const [pathname, setPathname] = useState("/server");
@@ -38,7 +37,8 @@ function App(): JSX.Element {
 				setPublicIP(res.data);
 				appConfig.set('publicIP', res.data);
 			}).catch(err => {
-				console.log("UnKnow");
+				console.log("error : "+ err);
+				appConfig.set('publicIP', "0.0.0.0");
 			})
 	};
 
