@@ -6,6 +6,8 @@ const api = {
   getPublicIP: () => ipcRenderer.send('get-public-ip'),
   onUpdateVersion: (callback) => ipcRenderer.on('update-version', callback),
   onUpdatePublicIP: (callback) => ipcRenderer.on('update-public-ip', callback),
+  mainDownloadCallback: (callback) => ipcRenderer.on('watch-download-file-state',callback),
+  mainUnzipCallback: (callback) => ipcRenderer.on('watch-unzip-file-state', callback),
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to
@@ -14,7 +16,7 @@ const api = {
 if (process.contextIsolated) {
   try {
     contextBridge.exposeInMainWorld('electron', electronAPI)
-    contextBridge.exposeInMainWorld('api', api)
+    contextBridge.exposeInMainWorld('mainApi', api)
   } catch (error) {
     console.error(error)
   }

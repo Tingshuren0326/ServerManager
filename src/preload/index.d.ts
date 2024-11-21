@@ -4,5 +4,12 @@ declare global {
   interface Window {
     electron: ElectronAPI
     api: unknown
+    mainApi: {
+      getPublicIP
+      onUpdateVersion
+      onUpdatePublicIP
+      mainDownloadCallback
+      mainUnzipCallback
+    }
   }
 }

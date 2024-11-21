@@ -1,7 +1,7 @@
 .win-title-bar {
-    user-select: none;
-    -webkit-app-region: drag;
-    background-color:aliceblue;
-    padding: 0;
-    height: 36px;
+  user-select: none;
+  -webkit-app-region: drag;
+  background-color: aliceblue;
+  padding: 0;
+  height: 36px;
 }
