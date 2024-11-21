@@ -2,14 +2,7 @@ import { PageContainer, ProCard } from '@ant-design/pro-components'
 import { ProConfigProvider } from '@ant-design/pro-provider'
 import { Button } from 'antd'
 
-const { ipcRenderer } = window.electron
-
 function Settings(): JSX.Element {
-  const getPublicIP = () => {
-    ipcRenderer.invoke('getPublicIP').then((result) => {
-      return result
-    })
-  }
 
   return (
     <ProConfigProvider dark={false}>

@@ -316,7 +316,7 @@ async function unzipFile(webContents: WebContents, zipPath: string, extractPath:
         })
       })
 
-      zip.on('extract', (entry, file) => {
+      zip.on('extract', (entry) => {
         zip_item.state = 'extract'
         zip_item.state_text = '解压中'
         zip_item.currentFile = entry.name
@@ -363,6 +363,7 @@ function downloadFile(
   currentWindow.webContents.downloadURL(url)
 
   session.defaultSession.on('will-download', (event, item, webContents) => {
+    console.log(event)
     item.setSavePath(join(filePath, '\\', fileName))
 
     const download_item = {
@@ -382,6 +383,7 @@ function downloadFile(
     downloadItems.push(download_item)
 
     item.on('updated', (event, state) => {
+      console.log(event)
       download_item.current = formatBytes(item.getReceivedBytes())
       download_item.total = formatBytes(item.getTotalBytes())
       download_item.state = state
@@ -444,6 +446,7 @@ function downloadFile(
     })
 
     item.once('done', (event, state) => {
+      console.log(event)
       download_item.state = state
       download_item.current = formatBytes(item.getReceivedBytes())
       download_item.total = formatBytes(item.getTotalBytes())

@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { Modal, Button } from 'antd'
+import  { useState } from 'react'
+import { Modal } from 'antd'
 
 // 自定义Hook用于管理弹窗状态
 const useModal = () => {
@@ -17,7 +17,7 @@ const useModal = () => {
 }
 
 const AppConfig = () => {
-  const { visible, showModal, hideModal } = useModal()
+  const { visible, hideModal } = useModal()
 
   return (
     <>

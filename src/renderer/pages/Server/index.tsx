@@ -15,25 +15,6 @@ type ServerItem = {
   des: string
 }
 
-type ServerProfile = {
-  id: number
-  uuid: string
-  name: string
-  path: string
-  backup: string
-  map: string
-  mods: string[]
-  state: string
-  enable_auto_backup: boolean
-  enable_day_backup: boolean
-  world_backip_path: string
-  tribe_backip_path: string
-  player_backip_path: string
-  setting_path: string
-  mods_path: string
-  mods_json_path: string
-}
-
 const Server: React.FC = () => {
   const [cards, setCards] = useState([
     { id: 1, title: 'Server 1', des: 'test 1' },

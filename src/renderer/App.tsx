@@ -3,6 +3,12 @@ import { QqOutlined } from '@ant-design/icons'
 import { PageContainer, ProLayout } from '@ant-design/pro-components'
 import { ProConfigProvider } from '@ant-design/pro-provider'
 
+import Icon from '@renderer/common/images/icon.png'
+
+import BGLight from '@renderer/common/images/bg_light.png'
+
+import BGGrid from '@renderer/common/images/bg_grid.png'
+
 import { Modal, Layout } from 'antd'
 const { Header } = Layout
 
@@ -13,7 +19,6 @@ import axios from 'axios'
 import defaultProps from '@renderer/_defaultProps'
 import Server from '@renderer/pages/Server'
 import './App.css'
-import { json } from 'stream/consumers'
 
 const useModal = () => {
   const [visible, setVisible] = useState(false)
@@ -32,7 +37,7 @@ const useModal = () => {
 function App(): JSX.Element {
   const [pathname, setPathname] = useState('/server')
 
-  const { visible, showModal, hideModal } = useModal()
+  const { visible, hideModal } = useModal()
 
   const [currentTime, setCurrentTime] = useState(new Date())
 
@@ -71,12 +76,16 @@ function App(): JSX.Element {
 
   if(window.mainApi){
     window.mainApi.mainDownloadCallback((event, state, item) => {
+      console.log(event)
+      console.log(state)
       console.log(item)
     })
   }
 
   if(window.mainApi){
     window.mainApi.mainUnzipCallback((event, state, item) => {
+      console.log(event)
+      console.log(state)
       console.log(item)
     })
   }
@@ -84,11 +93,15 @@ function App(): JSX.Element {
   useEffect(() => {
     intervalTimeRef.current = window.setInterval(() => {
       setCurrentTime(new Date())
+      console.log(currentTime)
     }, 1000)
 
     intervalIPRef.current = window.setInterval(() => {
       getPublicIP()
-    }, 1000)
+      getVersion()
+      console.log(version)
+      console.log(publicIP)
+    }, 60000)
 
     return () => {
       clearInterval(intervalTimeRef.current)
@@ -126,7 +139,7 @@ function App(): JSX.Element {
           pathname
         }}
         title={'Server Manager'}
-        logo={'./common/images/icon.png'}
+        logo={Icon}
         layout="side"
         disableMobile
         fixedHeader={true}
@@ -134,19 +147,19 @@ function App(): JSX.Element {
         locale={'zh-CN'}
         bgLayoutImgList={[
           {
-            src: './common/images/O1CN01O4etvp1DvpFLKfuWq_!!6000000000279-2-tps-609-606.png',
+            src: BGLight,
             left: 85,
             bottom: 100,
             height: '303px'
           },
           {
-            src: './common/images/O1CN01O4etvp1DvpFLKfuWq_!!6000000000279-2-tps-609-606.png',
+            src: BGLight,
             bottom: -68,
             right: -45,
             height: '303px'
           },
           {
-            src: './common/images/O1CN018NxReL1shX85Yz6Cx_!!6000000005798-2-tps-884-496.png',
+            src: BGGrid,
             bottom: 0,
             left: 0,
             width: '331px'
