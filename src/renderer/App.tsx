@@ -93,14 +93,11 @@ function App(): JSX.Element {
   useEffect(() => {
     intervalTimeRef.current = window.setInterval(() => {
       setCurrentTime(new Date())
-      console.log(currentTime)
     }, 1000)
 
     intervalIPRef.current = window.setInterval(() => {
       getPublicIP()
       getVersion()
-      console.log(version)
-      console.log(publicIP)
     }, 60000)
 
     return () => {

@@ -119,14 +119,6 @@ function createWindow(): void {
     )
 
     initConfig()
-
-    downloadFile(
-      mainWindow,
-      global.sharedAppConfig.download_dir,
-      'http://ljkj-zero.zjljkj.com/Server/ljkj_rtc.zip',
-      'ljkj_rtc.zip',
-      'ljkj_rtc'
-    )
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {

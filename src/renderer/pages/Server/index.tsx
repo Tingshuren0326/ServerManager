@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import { Row } from 'antd'
 
-import { DndContext, DragEndEvent, DragMoveEvent } from '@dnd-kit/core'
+import { DndContext, DragEndEvent, DragMoveEvent, useSensors, useSensor, MouseSensor } from '@dnd-kit/core'
 
 import { restrictToParentElement } from '@dnd-kit/modifiers'
 import { arrayMove, SortableContext, rectSortingStrategy } from '@dnd-kit/sortable'
 
 import './index.css'
 import ServerCard from '@renderer/components/ServerCard'
+import ServerConfig from '@renderer/components/ServerConfig'
 
 type ServerItem = {
   id: number
@@ -26,6 +27,9 @@ const Server: React.FC = () => {
     { id: 7, title: 'Server 7', des: 'test 7' },
     { id: 8, title: 'Server 8', des: 'test 8' }
   ])
+
+  const [showServerCard, setShowServerCard] = useState<boolean>(false)
+  const [currentServer, setCurrentServer] = useState<ServerItem>()
 
   const getMoveIndex = (array: ServerItem[], dragItem: DragMoveEvent) => {
     const { active, over } = dragItem
@@ -51,13 +55,40 @@ const Server: React.FC = () => {
     }
   }
 
+  const sensors = useSensors(
+    useSensor(MouseSensor, {
+      activationConstraint: {
+        distance: 5
+      }
+    })
+  )
+
+  const onServerCardClick = (item: ServerItem) => {
+    console.log('onServerCardClick :' + item.id)
+    setCurrentServer(item)
+    setShowServerCard(true);
+  }
+
+
   return (
-    <DndContext onDragEnd={dragEndEvent} modifiers={[restrictToParentElement]}>
-      <SortableContext items={cards.map((item) => item.id)} strategy={rectSortingStrategy}>
+    <DndContext
+      sensors={sensors}
+      onDragEnd={dragEndEvent}
+      modifiers={[restrictToParentElement]}
+    >
+      {<ServerConfig
+        onOpenChage={setShowServerCard}
+        drawShow={showServerCard}
+        item={currentServer as ServerItem}
+      />}
+      <SortableContext
+        items={cards.map((item) => item.id)}
+        strategy={rectSortingStrategy}
+      >
         <Row gutter={[24, 32]}>
           <div className="drag-container">
             {cards.map((item) => (
-              <ServerCard key={item.id} item={item} />
+              <ServerCard key={item.id} item={item} onProfileClick={() => onServerCardClick(item)} />
             ))}
           </div>
         </Row>
