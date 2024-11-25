@@ -46,7 +46,6 @@ export type serverEntity = {
     name: string
     cover: string
     map: string
-    mod_map: boolean
     use_api: boolean
     port: number
     query_port: number
@@ -57,8 +56,8 @@ export type serverEntity = {
     mod_names: string[]
     mods: serverModEntity[]
     args: string[]
-    user_config: serverUserConfigEntity
-    game_config: serverGameConfigEntity
+    game_user_settings: serverGameUserSettingsEntity
+    game_settings: serverGameEntity
     state: string
     state_text: string
     server_download: boolean
@@ -114,15 +113,15 @@ export type serverResetEntity = {
 }
 
 export type serverBackupEntity = {
-    enable: boolean
+    enable: boolean | true
     type: 'fixed' | 'interval'
-    time_hour: number
-    time_minute: number
-    max_reserve_day: number
-    backup_path: string
-    backup_world_path: string
-    backup_tribe_path: string
-    backup_player_path: string
+    time_hour: number | 0
+    time_minute: number | 0
+    max_reserve_day: number | 7
+    backup_path: string | 'C:/'
+    backup_world_path: string | 'C:/'
+    backup_tribe_path: string | 'C:/'
+    backup_player_path: string | 'C:/'
 }
 
 export type serverModEntity = {}
@@ -160,7 +159,7 @@ export type serverGameUserSettingsEntity = {
         DinoCharacterFoodDrainMultiplier: number
         DinoCharacterHealthRecoveryMultiplier: number
         DinoCharacterStaminaDrainMultiplier: number
-        DinoCountMultiplier: number
+        DinoCountMultiplier: number | 0
         DinoDamageMultiplier: number
         DinoResistanceMultiplier: number
         DestroyTamesOverTheSoftTameLimit: boolean

@@ -10,6 +10,8 @@ declare global {
       onUpdatePublicIP
       mainDownloadCallback
       mainUnzipCallback
+      openDirectoryDialog
+      openFileDialog
     }
   }
 }

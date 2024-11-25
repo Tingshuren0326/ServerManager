@@ -30,8 +30,18 @@ const ServerConfig: React.FC<ServerConfigProps> = ({ drawShow, item, onOpenChage
 
     const [formWidth, setFormWidth] = useState<number>(document.documentElement.clientWidth - 300 || document.body.clientWidth - 300);
 
+    const [culturDir, setCulturDir] = useState<string>();
+
     const onMaxPlayerCountChanged = (playerCount: number) => {
         setMaxPlayerCount(playerCount);
+    }
+
+    const onOpenCultureDir = (cultureDir: string) => {
+        if(window.mainApi){
+            window.mainApi.openDirectoryDialog("集群存储目录").then((dir) => {
+
+            });
+        }       
     }
 
     const handleWindowsResize = () => {

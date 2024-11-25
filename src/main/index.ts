@@ -1,4 +1,16 @@
-import { app, shell, BrowserWindow, ipcMain, Tray, Menu, globalShortcut, session, WebContents } from 'electron'
+import {
+  app,
+  shell,
+  BrowserWindow,
+  ipcMain,
+  Tray,
+  Menu,
+  globalShortcut,
+  session,
+  WebContents,
+  dialog,
+  FileFilter
+} from 'electron'
 import { join } from 'path'
 import { optimizer, is } from '@electron-toolkit/utils'
 import StreamZip from 'node-stream-zip'
@@ -14,6 +26,8 @@ import exit from '../../resources/tray/exit.png?asset'
 
 import { getVersion, mkdirPath, formatBytes } from './utils'
 import * as remoteMain from '@electron/remote/main'
+
+import { ServerSettings } from './entity/ServerSettings'
 
 process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true'
 
@@ -250,25 +264,32 @@ function initConfig() {
     download_dir: mkdirPath(work_base_path + '\\Download')
   }
 
-  console.log(global.sharedAppConfig)
+  let ss = new ServerSettings();
+ 
+  console.log(ss)
 }
 
-async function unzipFile(webContents: WebContents, zipPath: string, extractPath: string, fingerPrint: string) {
+async function unzipFile(
+  webContents: WebContents,
+  zipPath: string,
+  extractPath: string,
+  fingerPrint: string
+) {
   return new Promise((resolve, reject) => {
     try {
       const zip = new StreamZip({
         file: zipPath,
-        storeEntries: true,
-      });
+        storeEntries: true
+      })
 
       let zip_item = {
         zipPath: zipPath,
         extractPath: extractPath,
-        currentFile: "",
+        currentFile: '',
         fingerPrint: fingerPrint,
         current: 0,
         total: 0,
-        state: "readfile",
+        state: 'readfile',
         state_text: '读取文件中',
         process: 0.0
       }
@@ -291,19 +312,18 @@ async function unzipFile(webContents: WebContents, zipPath: string, extractPath:
         zip_item.process = 0
         zip.extract(null, extractPath, (err, count) => {
           if (err) {
-            console.log('extract ' + zipPath + ' failed: ' + err);
-            reject(err);
-          }
-          else {
-            console.log('extract  files count :' + count);
+            console.log('extract ' + zipPath + ' failed: ' + err)
+            reject(err)
+          } else {
+            console.log('extract  files count :' + count)
             zip_item.state = 'complete'
             zip_item.state_text = '解压完成'
-            zip_item.currentFile = ""
+            zip_item.currentFile = ''
             zip_item.current = count as number
             zip_item.process = 1
             webContents.send('watch-unzip-file-state', zip_item.state, zip_item)
-            zip.close();
-            resolve(count);
+            zip.close()
+            resolve(count)
           }
         })
       })
@@ -313,22 +333,20 @@ async function unzipFile(webContents: WebContents, zipPath: string, extractPath:
         zip_item.state_text = '解压中'
         zip_item.currentFile = entry.name
         zip_item.current += 1
-        zip_item.process = (zip_item.current / zip_item.total)
+        zip_item.process = zip_item.current / zip_item.total
         webContents.send('watch-unzip-file-state', zip_item.state, zip_item)
       })
 
       zip.on('error', (err) => {
-        console.log('unzip ' + zipPath + ' failed: ' + err);
+        console.log('unzip ' + zipPath + ' failed: ' + err)
         webContents.send('watch-unzip-file-state', 'error', zip_item)
-        reject(err);
+        reject(err)
       })
-    }
-    catch (err) {
-      console.log('unzip ' + zipPath + ' failed: ' + err);
+    } catch (err) {
+      console.log('unzip ' + zipPath + ' failed: ' + err)
     }
   })
 }
-
 
 function handerTrayRightClick(): void {
   showTaryMenu = !showTaryMenu
@@ -368,7 +386,7 @@ function downloadFile(
       total: formatBytes(0),
       speed: '0KB/s',
       state: 'none',
-      state_text: "等待下载",
+      state_text: '等待下载',
       process: 0.0
     }
 
@@ -465,7 +483,12 @@ function downloadFile(
             process: download_item.process
           })
 
-          unzipFile(webContents, join(filePath, '\\', fileName), global.sharedAppConfig.backup_dir, fingerPrint)
+          unzipFile(
+            webContents,
+            join(filePath, '\\', fileName),
+            global.sharedAppConfig.backup_dir,
+            fingerPrint
+          )
           break
         case 'interrupted':
           download_item.speed = formatBytes(item.getCurrentBytesPerSecond()) + '/s'
@@ -513,6 +536,29 @@ ipcMain.on('win-closed', () => {
     mainWindow.hide()
   }
 })
+
+async function handleOpenDir(title: string) {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: title,
+    defaultPath: global.sharedAppConfig.work_dir,
+    properties: ['openDirectory']
+  })
+  if (!result.canceled) {
+    return result.filePaths[0]
+  }
+}
+
+async function handleOpenFile(title: string, multiple: boolean, filters: FileFilter[]) {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: title,
+    defaultPath: global.sharedAppConfig.work_dir,
+    properties: multiple ? ['openFile', 'multiSelections'] : ['openFile'],
+    filters: filters
+  })
+  if (!result.canceled) {
+    return result.filePaths[0]
+  }
+}
 
 // 打开设置窗口
 ipcMain.on('setting-window', () => { })

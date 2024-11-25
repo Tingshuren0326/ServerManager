@@ -10,6 +10,7 @@ import BGLight from '@renderer/common/images/bg_light.png'
 import BGGrid from '@renderer/common/images/bg_grid.png'
 
 import { Modal, Layout } from 'antd'
+
 const { Header } = Layout
 
 import { useState, useEffect, useRef } from 'react'
