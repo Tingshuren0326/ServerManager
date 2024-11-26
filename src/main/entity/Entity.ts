@@ -72,7 +72,7 @@ export type serverCommandConfigEntity = {
     disabledinonetrangescaling: boolean
     ForceAllowCaveFlyers: boolean
     ForceRespawnDinos: boolean
-    mods: string[]
+    mods: string[] | number[]
     NoBattlEye: boolean
     NoDinos: boolean
     NoWildBabies: boolean
