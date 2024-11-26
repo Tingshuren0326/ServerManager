@@ -275,15 +275,11 @@ function trayManager(): void {
 
 function initConfig() {
   getAppSettings();
-  console.log(global.sharedAppConfig);
-  addServer();
-  addServer();
-  addServer();
-  addServer();
-  addServer();
-  saveAppSettings();
-  console.log(getAppSettings());
-  console.log(global.sharedAppConfig);
+
+  let ss = new Server(global.sharedAppConfig.work_dir);
+  ss.loadConfig();
+  console.log(ss.getRunCommand());
+  ss.saveConfig();
 }
 
 function getAppSettings(): SettingsType {
@@ -351,7 +347,7 @@ function listServer() {
 
 // 创建一个服务器
 function addServer(): Server {
-  const server = new Server;
+  const server = new Server(global.sharedAppConfig.work_dir);
   global.sharedAppConfig.server_list[server.uuid] = server;
   return server;
 }
@@ -369,7 +365,7 @@ function getServer(uuid: string): Server {
     return global.sharedAppConfig.server_list[uuid];
   }
   else {
-    return new Server;
+    return new Server(global.sharedAppConfig.work_dir);
   }
 }
 

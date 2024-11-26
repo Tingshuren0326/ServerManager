@@ -8,9 +8,13 @@ import fs from 'fs'
 import ini from 'ini'
 import { v4 } from 'uuid'
 import { join } from 'path'
+import { mkdirPath } from '../utils'
 
 let game_user_settings_path = '\\ShooterGame\\Saved\\Config\\WindowsServer\\GameUserSettings.ini';
 let game_settings_path = '\\ShooterGame\\Saved\\Config\\WindowsServer\\Game.ini';
+
+let game_user_settings_dir = '\\ShooterGame\\Saved\\Config\\WindowsServer';
+let game_settings_dir = '\\ShooterGame\\Saved\\Config\\WindowsServer';
 
 let api_dir = '\\ShooterGame\\Binaries\\Win64\\';
 let api_plugin_dir = '\\ShooterGame\\Binaries\\Win64\\ArkApi\\\Plugins\\';
@@ -41,11 +45,11 @@ export class Server {
     backup: Backup
     conmand_config: CommandConfig
 
-    constructor() {
+    constructor(root: string) {
         this.uuid = v4();
         this.name = 'Server';
-        this.server_path = '';
-        this.profile_path = '';
+        this.server_path = root + '\\' + this.name;
+        this.profile_path = root + '\\Profile';
         this.map = 'TheIsLand_WP';
         this.use_api = true;
         this.port = 7777;
@@ -100,40 +104,45 @@ export class Server {
     }
 
     pathProfile(): string {
-        return join(this.profile_path, this.name, '.ini')
+        return join(this.profile_path, this.uuid) + '.ini'
     }
 
     loadConfig(): Server {
-        let obj = ini.parse(fs.readFileSync(this.pathProfile(), 'utf8')) as Server;
+        if (fs.existsSync(this.pathProfile())) {
 
-        this.uuid = obj.uuid;
-        this.name = obj.name;
-        this.server_path = obj.server_path;
-        this.map = obj.map;
-        this.use_api = obj.use_api;
-        this.port = obj.port;
-        this.query_port = obj.query_port;
-        this.rcon_port = obj.rcon_port;
-        this.password = obj.password;
-        this.observe_password = obj.observe_password;
-        this.mods = obj.mods;
-        this.args = obj.args;
-        this.backup = obj.backup;
-        this.conmand_config = obj.conmand_config
+            let obj = ini.parse(fs.readFileSync(this.pathProfile(), 'utf8')) as Server;
 
-        if (fs.existsSync(join(this.server_path, origin_exe))) {
-            this.server_download = true;
-            this.state = 0;
-            this.state_text = '准备就绪';
+            this.uuid = obj.uuid;
+            this.name = obj.name;
+            this.server_path = obj.server_path;
+            this.map = obj.map;
+            this.use_api = obj.use_api;
+            this.port = obj.port;
+            this.query_port = obj.query_port;
+            this.rcon_port = obj.rcon_port;
+            this.password = obj.password;
+            this.observe_password = obj.observe_password;
+            this.mods = obj.mods;
+            this.args = obj.args;
+            this.backup = obj.backup;
+            this.conmand_config = obj.conmand_config
+
+            if (fs.existsSync(join(this.server_path, origin_exe))) {
+                this.server_download = true;
+                this.state = 0;
+                this.state_text = '准备就绪';
+            }
+            else {
+                this.server_download = false;
+                this.state = -1;
+                this.state_text = '未下载';
+            }
+
+            this.loadGameUserSettings();
+            this.loadGameSettings();
+        }else{
+            this.saveConfig();
         }
-        else {
-            this.server_download = false;
-            this.state = -1;
-            this.state_text = '未下载';
-        }
-
-        this.loadGameUserSettings();
-        this.loadGameSettings();
 
         return this;
     }
@@ -166,6 +175,10 @@ export class Server {
         return join(this.server_path, game_user_settings_path)
     }
 
+    dirGameUserSettings(): string {
+        return join(this.server_path, game_user_settings_dir)
+    }
+
     loadGameUserSettings(): GameUserSettings {
         if (fs.existsSync(this.pathGameUserSettings())) {
             this.game_user_settings = ini.parse(fs.readFileSync(this.pathGameUserSettings(), 'utf8')) as GameUserSettings;
@@ -181,11 +194,19 @@ export class Server {
             this.game_user_settings = new GameUserSettings;
         }
 
+        if (!fs.existsSync(this.dirGameUserSettings())) {
+            mkdirPath(this.dirGameUserSettings())
+        }
+
         fs.writeFileSync(this.pathGameUserSettings(), ini.stringify(this.game_user_settings));
     }
 
     pathGameSettings(): string {
         return join(this.server_path, game_settings_path)
+    }
+
+    dirGameSettings(): string {
+        return join(this.server_path, game_settings_dir)
     }
 
     loadGameSettings(): Game {
@@ -201,6 +222,10 @@ export class Server {
     saveGameSettings(): void {
         if (this.game_settings == null) {
             this.game_settings = new Game;
+        }
+
+        if (!fs.existsSync(this.dirGameSettings())) {
+            mkdirPath(this.dirGameSettings())
         }
 
         fs.writeFileSync(this.pathGameSettings(), ini.stringify(this.game_settings));
