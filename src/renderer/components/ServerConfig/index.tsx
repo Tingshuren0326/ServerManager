@@ -37,11 +37,11 @@ const ServerConfig: React.FC<ServerConfigProps> = ({ drawShow, item, onOpenChage
     }
 
     const onOpenCultureDir = (cultureDir: string) => {
-        if(window.mainApi){
+        if (window.mainApi) {
             window.mainApi.openDirectoryDialog("集群存储目录").then((dir) => {
 
             });
-        }       
+        }
     }
 
     const handleWindowsResize = () => {

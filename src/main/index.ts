@@ -27,7 +27,15 @@ import exit from '../../resources/tray/exit.png?asset'
 import { getVersion, mkdirPath, formatBytes } from './utils'
 import * as remoteMain from '@electron/remote/main'
 
+import { MessageOfTheDay } from './entity/MessageOfTheDay'
+import { SessionSettings } from './entity/SessionSettings'
 import { ServerSettings } from './entity/ServerSettings'
+import { Server } from './entity/Server';
+
+import fs from 'fs'
+import ini from 'ini'
+import { v4 as uuidv4 } from 'uuid'
+import { GameUserSettings } from './entity/GameUserSettings'
 
 process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true'
 
@@ -36,7 +44,7 @@ let appTray
 let showTaryMenu = false
 let contentMenu
 
-type downloadItem = {
+declare type downloadItem = {
   url: string
   filePath: string
   fileName: string
@@ -50,7 +58,7 @@ type downloadItem = {
   process: number
 }
 
-type unzipItem = {
+declare type unzipItem = {
   zipPath: string
   extractPath: string
   currentFile: string
@@ -61,6 +69,18 @@ type unzipItem = {
   state_text: string
   process: number
 }
+
+declare type SettingsType = {
+  work_dir: string
+  backup_dir: string
+  server_dir: string
+  steamCmd_dir: string
+  mods_dir: string
+  download_dir: string
+  server_profile_dir: string
+  server_list: {}
+}
+
 
 const downloadItems: downloadItem[] = []
 const unzipItems: unzipItem[] = []
@@ -73,7 +93,10 @@ global.sharedAppConfig = {
   server_dir: '',
   steamCmd_dir: '',
   mods_dir: '',
-  download_dir: ''
+  download_dir: '',
+  server_profile_dir: '',
+  server_ids:[],
+  server_list: {}
 }
 
 function createWindow(): void {
@@ -251,22 +274,108 @@ function trayManager(): void {
 }
 
 function initConfig() {
+  getAppSettings();
+  console.log(global.sharedAppConfig);
+  addServer();
+  addServer();
+  addServer();
+  addServer();
+  addServer();
+  saveAppSettings();
+  console.log(getAppSettings());
+  console.log(global.sharedAppConfig);
+}
+
+function getAppSettings(): SettingsType {
+  const settings_path = app.getAppPath() + '\\settings.ini';
+
+  let app_settings: SettingsType;
+
+  if (fs.existsSync(settings_path)) {
+    app_settings = ini.parse(fs.readFileSync(settings_path, 'utf8')) as SettingsType;
+  } else {
+    app_settings = setDefaultAppSettings();
+  }
+
+  global.sharedAppConfig.work_dir = app_settings.work_dir;
+  global.sharedAppConfig.backup_dir = app_settings.backup_dir;
+  global.sharedAppConfig.server_dir = app_settings.server_dir;
+  global.sharedAppConfig.steamCmd_dir = app_settings.steamCmd_dir;
+  global.sharedAppConfig.mods_dir = app_settings.mods_dir;
+  global.sharedAppConfig.download_dir = app_settings.download_dir;
+  global.sharedAppConfig.server_profile_dir = app_settings.server_profile_dir;
+  global.sharedAppConfig.server_list = app_settings.server_list === undefined ? [] : app_settings.server_list;
+
+  return app_settings;
+}
+
+function setDefaultAppSettings() {
+  const settings_path = app.getAppPath() + '\\settings.ini';
   const work_base_path = mkdirPath(app.getAppPath() + '\\AsaData')
 
-  global.sharedAppConfig = {
-    version: getVersion(),
-    publicIP: '127.0.0.1',
+  const app_settings: SettingsType = {
     work_dir: work_base_path,
     backup_dir: mkdirPath(work_base_path + '\\Backup'),
     server_dir: mkdirPath(work_base_path + '\\Server'),
     steamCmd_dir: mkdirPath(work_base_path + '\\SteamCMD'),
     mods_dir: mkdirPath(work_base_path + '\\Mods'),
-    download_dir: mkdirPath(work_base_path + '\\Download')
+    download_dir: mkdirPath(work_base_path + '\\Download'),
+    server_profile_dir: mkdirPath(work_base_path + '\\Profile'),
+    server_list: {}
   }
 
-  let ss = new ServerSettings();
- 
-  console.log(ss)
+  fs.writeFileSync(settings_path, ini.stringify(app_settings))
+  return app_settings;
+}
+
+function saveAppSettings():void{
+  const settings_path = app.getAppPath() + '\\settings.ini';
+
+  const app_settings: SettingsType = {
+    work_dir: global.sharedAppConfig.work_dir,
+    backup_dir: global.sharedAppConfig.backup_dir,
+    server_dir: global.sharedAppConfig.server_dir,
+    steamCmd_dir: global.sharedAppConfig.steamCmd_dir,
+    mods_dir:  global.sharedAppConfig.mods_dir,
+    download_dir: global.sharedAppConfig.download_dir,
+    server_profile_dir: global.sharedAppConfig.server_profile_dir,
+    server_list: global.sharedAppConfig.server_list
+  }
+  fs.writeFileSync(settings_path, ini.stringify(app_settings))
+}
+
+// 获取服务器列表
+function listServer() {
+  return global.sharedAppConfig.server_list;
+}
+
+// 创建一个服务器
+function addServer(): Server {
+  const server = new Server;
+  global.sharedAppConfig.server_list[server.uuid] = server;
+  return server;
+}
+
+// 删除服务器
+function removeServer(uuid: string): void {
+  if (uuid in global.sharedAppConfig.server_list) {
+    delete global.sharedAppConfig.server_list[uuid];
+  }
+}
+
+// 获取服务器信息
+function getServer(uuid: string): Server {
+  if (uuid in global.sharedAppConfig.server_list) {
+    return global.sharedAppConfig.server_list[uuid];
+  }
+  else {
+    return new Server;
+  }
+}
+
+// 设置服务器参数
+function setServer(server: Server): void {
+  global.sharedAppConfig.server_list[server.uuid] = server
 }
 
 async function unzipFile(
