@@ -82,9 +82,9 @@ export class CommandConfig {
 
     getCommand(): string {
         return '?listen'.concat(
-            ' -port=', this.port.toString(),
+            '?Port=', this.port.toString(),
             '?QueryPort=', this.query_port.toString(),
-            '?EventColorsChanceOverride=', this.EventColorsChanceOverride.toString(),
+            (this.EventColorsChanceOverride === 0 ? '' : '?EventColorsChanceOverride=' + this.EventColorsChanceOverride.toString()),
             ' -culture=' + this.culture,
             (this.AlwaysTickDedicatedSkeletalMeshes ? ' -AlwaysTickDedicatedSkeletalMeshes' : ''),
             (this.AutoDestroyStructures ? ' -AutoDestroyStructures' : ''),
@@ -101,7 +101,7 @@ export class CommandConfig {
             (this.servergamelog ? ' -servergamelog' : ''),
             (this.servergamelogincludetribelogs ? ' -servergamelogincludetribelogs' : ''),
             (this.ServerRCONOutputTribeLogs ? ' -ServerRCONOutputTribeLogs' : ''),
-            ' -WinLiveMaxPlayers', this.WinLiveMaxPlayers.toString(),
+            ' -WinLiveMaxPlayers=', this.WinLiveMaxPlayers.toString(),
             (this.clusterid == '' ? '' : ' -clusterid=' + this.clusterid),
             (this.ClusterDirOverride == '' ? '' : ' -ClusterDirOverride=' + this.ClusterDirOverride),
             (this.NoTransferFromFiltering ? ' -NoTransferFromFiltering' : ''),

@@ -6,14 +6,11 @@ import {
   Tray,
   Menu,
   globalShortcut,
-  session,
-  WebContents,
   dialog,
   FileFilter
 } from 'electron'
 import { join } from 'path'
 import { optimizer, is } from '@electron-toolkit/utils'
-import StreamZip from 'node-stream-zip'
 
 import icon from '../../resources/icon.png?asset'
 import home from '../../resources/tray/home.png?asset'
@@ -24,18 +21,16 @@ import setting from '../../resources/tray/setting.png?asset'
 import info from '../../resources/tray/info.png?asset'
 import exit from '../../resources/tray/exit.png?asset'
 
-import { getVersion, mkdirPath, formatBytes } from './utils'
+import { getVersion, mkdirPath } from './utils'
 import * as remoteMain from '@electron/remote/main'
-
-import { MessageOfTheDay } from './entity/MessageOfTheDay'
-import { SessionSettings } from './entity/SessionSettings'
-import { ServerSettings } from './entity/ServerSettings'
 import { Server } from './entity/Server';
 
 import fs from 'fs'
 import ini from 'ini'
-import { v4 as uuidv4 } from 'uuid'
-import { GameUserSettings } from './entity/GameUserSettings'
+import { downloadFile, getDownloadList } from './components/Download'
+import { unzipFile, zipFile } from './components/Zip'
+import { loadAppSettings, setDefaultAppSettings, saveAppSettings } from './components/AppSettings'
+
 
 process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true'
 
@@ -43,47 +38,6 @@ let mainWindow
 let appTray
 let showTaryMenu = false
 let contentMenu
-
-declare type downloadItem = {
-  url: string
-  filePath: string
-  fileName: string
-  item: any
-  fingerPrint: string
-  current: string
-  total: string
-  speed: string
-  state: string
-  state_text: string
-  process: number
-}
-
-declare type unzipItem = {
-  zipPath: string
-  extractPath: string
-  currentFile: string
-  fingerPrint: string
-  current: number
-  total: number
-  state: string
-  state_text: string
-  process: number
-}
-
-declare type SettingsType = {
-  work_dir: string
-  backup_dir: string
-  server_dir: string
-  steamCmd_dir: string
-  mods_dir: string
-  download_dir: string
-  server_profile_dir: string
-  server_list: {}
-}
-
-
-const downloadItems: downloadItem[] = []
-const unzipItems: unzipItem[] = []
 
 global.sharedAppConfig = {
   version: getVersion(),
@@ -95,8 +49,8 @@ global.sharedAppConfig = {
   mods_dir: '',
   download_dir: '',
   server_profile_dir: '',
-  server_ids:[],
-  server_list: {}
+  server_ids: [],
+  server_list: []
 }
 
 function createWindow(): void {
@@ -274,70 +228,14 @@ function trayManager(): void {
 }
 
 function initConfig() {
-  getAppSettings();
+  loadAppSettings();
 
-  let ss = new Server(global.sharedAppConfig.work_dir);
+  console.log(global.sharedAppConfig);
+
+  let ss = addServer();
   ss.loadConfig();
   console.log(ss.getRunCommand());
   ss.saveConfig();
-}
-
-function getAppSettings(): SettingsType {
-  const settings_path = app.getAppPath() + '\\settings.ini';
-
-  let app_settings: SettingsType;
-
-  if (fs.existsSync(settings_path)) {
-    app_settings = ini.parse(fs.readFileSync(settings_path, 'utf8')) as SettingsType;
-  } else {
-    app_settings = setDefaultAppSettings();
-  }
-
-  global.sharedAppConfig.work_dir = app_settings.work_dir;
-  global.sharedAppConfig.backup_dir = app_settings.backup_dir;
-  global.sharedAppConfig.server_dir = app_settings.server_dir;
-  global.sharedAppConfig.steamCmd_dir = app_settings.steamCmd_dir;
-  global.sharedAppConfig.mods_dir = app_settings.mods_dir;
-  global.sharedAppConfig.download_dir = app_settings.download_dir;
-  global.sharedAppConfig.server_profile_dir = app_settings.server_profile_dir;
-  global.sharedAppConfig.server_list = app_settings.server_list === undefined ? [] : app_settings.server_list;
-
-  return app_settings;
-}
-
-function setDefaultAppSettings() {
-  const settings_path = app.getAppPath() + '\\settings.ini';
-  const work_base_path = mkdirPath(app.getAppPath() + '\\AsaData')
-
-  const app_settings: SettingsType = {
-    work_dir: work_base_path,
-    backup_dir: mkdirPath(work_base_path + '\\Backup'),
-    server_dir: mkdirPath(work_base_path + '\\Server'),
-    steamCmd_dir: mkdirPath(work_base_path + '\\SteamCMD'),
-    mods_dir: mkdirPath(work_base_path + '\\Mods'),
-    download_dir: mkdirPath(work_base_path + '\\Download'),
-    server_profile_dir: mkdirPath(work_base_path + '\\Profile'),
-    server_list: {}
-  }
-
-  fs.writeFileSync(settings_path, ini.stringify(app_settings))
-  return app_settings;
-}
-
-function saveAppSettings():void{
-  const settings_path = app.getAppPath() + '\\settings.ini';
-
-  const app_settings: SettingsType = {
-    work_dir: global.sharedAppConfig.work_dir,
-    backup_dir: global.sharedAppConfig.backup_dir,
-    server_dir: global.sharedAppConfig.server_dir,
-    steamCmd_dir: global.sharedAppConfig.steamCmd_dir,
-    mods_dir:  global.sharedAppConfig.mods_dir,
-    download_dir: global.sharedAppConfig.download_dir,
-    server_profile_dir: global.sharedAppConfig.server_profile_dir,
-    server_list: global.sharedAppConfig.server_list
-  }
-  fs.writeFileSync(settings_path, ini.stringify(app_settings))
 }
 
 // 获取服务器列表
@@ -347,7 +245,8 @@ function listServer() {
 
 // 创建一个服务器
 function addServer(): Server {
-  const server = new Server(global.sharedAppConfig.work_dir);
+  let index = global.sharedAppConfig.server_list.length + 1;
+  const server = new Server('Server' + index, global.sharedAppConfig.work_dir);
   global.sharedAppConfig.server_list[server.uuid] = server;
   return server;
 }
@@ -365,7 +264,7 @@ function getServer(uuid: string): Server {
     return global.sharedAppConfig.server_list[uuid];
   }
   else {
-    return new Server(global.sharedAppConfig.work_dir);
+    return addServer();
   }
 }
 
@@ -374,88 +273,12 @@ function setServer(server: Server): void {
   global.sharedAppConfig.server_list[server.uuid] = server
 }
 
-async function unzipFile(
-  webContents: WebContents,
-  zipPath: string,
-  extractPath: string,
-  fingerPrint: string
-) {
-  return new Promise((resolve, reject) => {
-    try {
-      const zip = new StreamZip({
-        file: zipPath,
-        storeEntries: true
-      })
-
-      let zip_item = {
-        zipPath: zipPath,
-        extractPath: extractPath,
-        currentFile: '',
-        fingerPrint: fingerPrint,
-        current: 0,
-        total: 0,
-        state: 'readfile',
-        state_text: '读取文件中',
-        process: 0.0
-      }
-
-      unzipItems.push(zip_item)
-
-      webContents.send('watch-unzip-file-state', zip_item.state, zip_item)
-
-      zip.on('entry', (entry) => {
-        if (entry.isFile) {
-          zip_item.total += 1
-        }
-      })
-
-      zip.on('ready', () => {
-        zip_item.state = 'extract'
-        zip_item.state_text = '解压中'
-        zip_item.currentFile = ''
-        zip_item.current = 0
-        zip_item.process = 0
-        zip.extract(null, extractPath, (err, count) => {
-          if (err) {
-            console.log('extract ' + zipPath + ' failed: ' + err)
-            reject(err)
-          } else {
-            console.log('extract  files count :' + count)
-            zip_item.state = 'complete'
-            zip_item.state_text = '解压完成'
-            zip_item.currentFile = ''
-            zip_item.current = count as number
-            zip_item.process = 1
-            webContents.send('watch-unzip-file-state', zip_item.state, zip_item)
-            zip.close()
-            resolve(count)
-          }
-        })
-      })
-
-      zip.on('extract', (entry) => {
-        zip_item.state = 'extract'
-        zip_item.state_text = '解压中'
-        zip_item.currentFile = entry.name
-        zip_item.current += 1
-        zip_item.process = zip_item.current / zip_item.total
-        webContents.send('watch-unzip-file-state', zip_item.state, zip_item)
-      })
-
-      zip.on('error', (err) => {
-        console.log('unzip ' + zipPath + ' failed: ' + err)
-        webContents.send('watch-unzip-file-state', 'error', zip_item)
-        reject(err)
-      })
-    } catch (err) {
-      console.log('unzip ' + zipPath + ' failed: ' + err)
-    }
-  })
+function unzip(zipPath: string, extractPath: string, fingerPrint: string): void {
+  unzipFile(mainWindow.webContents, zipPath, extractPath, fingerPrint)
 }
 
 function handerTrayRightClick(): void {
   showTaryMenu = !showTaryMenu
-
   if (showTaryMenu) {
     appTray.setContextMenu(contentMenu)
   } else {
@@ -468,171 +291,8 @@ function handerTray(): void {
   mainWindow.isVisible() ? mainWindow.setSkipTaskbar(false) : mainWindow.setSkipTaskbar(true)
 }
 
-function downloadFile(
-  currentWindow,
-  filePath: string,
-  url: string,
-  fileName,
-  fingerPrint: string
-): void {
-  currentWindow.webContents.downloadURL(url)
-
-  session.defaultSession.on('will-download', (event, item, webContents) => {
-    console.log(event)
-    item.setSavePath(join(filePath, '\\', fileName))
-
-    const download_item = {
-      url: url,
-      filePath: filePath,
-      fileName: fileName,
-      item: item,
-      fingerPrint: fingerPrint,
-      current: formatBytes(0),
-      total: formatBytes(0),
-      speed: '0KB/s',
-      state: 'none',
-      state_text: '等待下载',
-      process: 0.0
-    }
-
-    downloadItems.push(download_item)
-
-    item.on('updated', (event, state) => {
-      console.log(event)
-      download_item.current = formatBytes(item.getReceivedBytes())
-      download_item.total = formatBytes(item.getTotalBytes())
-      download_item.state = state
-      download_item.process =
-        item.getReceivedBytes() === 0 && item.getTotalBytes() === 0
-          ? 0.0
-          : item.getReceivedBytes() / item.getTotalBytes()
-
-      switch (state) {
-        case 'interrupted':
-          download_item.state_text = '下载中断'
-          download_item.speed = formatBytes(item.getCurrentBytesPerSecond()) + '/s'
-          webContents.send('watch-download-file-state', state, {
-            url: download_item.url,
-            fileName: download_item.fileName,
-            filePath: download_item.filePath,
-            fingerPrint: download_item.fingerPrint,
-            current: download_item.current,
-            total: download_item.total,
-            speed: download_item.speed,
-            state: download_item.state,
-            state_text: download_item.state_text,
-            process: download_item.process
-          })
-          break
-        case 'progressing':
-          if (item.isPaused()) {
-            download_item.state_text = '下载暂停'
-            download_item.speed = formatBytes(item.getCurrentBytesPerSecond()) + '/s'
-            webContents.send('watch-download-file-state', state, {
-              url: download_item.url,
-              fileName: download_item.fileName,
-              filePath: download_item.filePath,
-              fingerPrint: download_item.fingerPrint,
-              current: download_item.current,
-              total: download_item.total,
-              speed: download_item.speed,
-              state: download_item.state,
-              state_text: download_item.state_text,
-              process: download_item.process
-            })
-          } else {
-            download_item.state_text = '下载中'
-            download_item.speed = formatBytes(item.getCurrentBytesPerSecond()) + '/s'
-            webContents.send('watch-download-file-state', state, {
-              url: download_item.url,
-              fileName: download_item.fileName,
-              filePath: download_item.filePath,
-              fingerPrint: download_item.fingerPrint,
-              current: download_item.current,
-              total: download_item.total,
-              speed: download_item.speed,
-              state: download_item.state,
-              state_text: download_item.state_text,
-              process: download_item.process
-            })
-          }
-          break
-      }
-    })
-
-    item.once('done', (event, state) => {
-      console.log(event)
-      download_item.state = state
-      download_item.current = formatBytes(item.getReceivedBytes())
-      download_item.total = formatBytes(item.getTotalBytes())
-      download_item.process =
-        item.getReceivedBytes() === 0 && item.getTotalBytes() === 0
-          ? 0.0
-          : item.getReceivedBytes() / item.getTotalBytes()
-
-      switch (state) {
-        case 'completed':
-          download_item.process = 1
-          download_item.speed = formatBytes(item.getCurrentBytesPerSecond()) + '/s'
-          download_item.state_text = '下载完成'
-          webContents.send('watch-download-file-state', state, {
-            url: download_item.url,
-            fileName: download_item.fileName,
-            filePath: download_item.filePath,
-            fingerPrint: download_item.fingerPrint,
-            current: download_item.current,
-            total: download_item.total,
-            speed: download_item.speed,
-            state: download_item.state,
-            state_text: download_item.state_text,
-            process: download_item.process
-          })
-
-          unzipFile(
-            webContents,
-            join(filePath, '\\', fileName),
-            global.sharedAppConfig.backup_dir,
-            fingerPrint
-          )
-          break
-        case 'interrupted':
-          download_item.speed = formatBytes(item.getCurrentBytesPerSecond()) + '/s'
-          download_item.state_text = '下载中断'
-          webContents.send('watch-download-file-state', state, {
-            url: download_item.url,
-            fileName: download_item.fileName,
-            filePath: download_item.filePath,
-            fingerPrint: download_item.fingerPrint,
-            current: download_item.current,
-            total: download_item.total,
-            speed: download_item.speed,
-            state: download_item.state,
-            state_text: download_item.state_text,
-            process: download_item.process
-          })
-          break
-        case 'cancelled':
-          download_item.current = formatBytes(0)
-          download_item.total = formatBytes(0)
-          download_item.process = 0
-          download_item.speed = formatBytes(item.getCurrentBytesPerSecond()) + '/s'
-          download_item.state_text = '下载取消'
-          webContents.send('watch-download-file-state', state, {
-            url: download_item.url,
-            fileName: download_item.fileName,
-            filePath: download_item.filePath,
-            fingerPrint: download_item.fingerPrint,
-            current: download_item.current,
-            total: download_item.total,
-            speed: download_item.speed,
-            state: download_item.state,
-            state_text: download_item.state_text,
-            process: download_item.process
-          })
-          break
-      }
-    })
-  })
+function downloadUrl(filePath: string, url: string, fileName: string, fingerPrint: string): void {
+  downloadFile(mainWindow, filePath, url, fileName, fingerPrint);
 }
 
 // 关闭窗口通知
