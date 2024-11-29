@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Row } from 'antd'
+import { Row, Col } from 'antd'
 
 import { DndContext, DragEndEvent, DragMoveEvent, useSensors, useSensor, MouseSensor } from '@dnd-kit/core'
 
@@ -10,22 +10,84 @@ import './index.css'
 import ServerCard from '@renderer/components/ServerCard'
 import ServerConfig from '@renderer/components/ServerConfig'
 
+import TheIslandCard from '@renderer/common/images/Ark/the_island_card.jpg'
+
+import ScorchedEarthCard from '@renderer/common/images/Ark/scorched_earth_card.jpg'
+
+import TheCenterCard from '@renderer/common/images/Ark/the_center_card.jpg'
+
+import AberrationCard from '@renderer/common/images/Ark/aberration_card.jpg'
+
+import ExtinctionCard from '@renderer/common/images/Ark/extinction_card.jpg'
+
 type ServerItem = {
   id: number
   title: string
+  cover: string
   des: string
 }
 
 const Server: React.FC = () => {
   const [cards, setCards] = useState([
-    { id: 1, title: 'Server 1', des: 'test 1' },
-    { id: 2, title: 'Server 2', des: 'test 2' },
-    { id: 3, title: 'Server 3', des: 'test 3' },
-    { id: 4, title: 'Server 4', des: 'test 4' },
-    { id: 5, title: 'Server 5', des: 'test 5' },
-    { id: 6, title: 'Server 6', des: 'test 6' },
-    { id: 7, title: 'Server 7', des: 'test 7' },
-    { id: 8, title: 'Server 8', des: 'test 8' }
+    {
+      id: 1,
+      title: 'Riru TheIs land PVE',
+      cover: TheIslandCard,
+      des: '0 / 128'
+    },
+    {
+      id: 2,
+      title: 'Riru Scorched Earth PVE',
+      cover: ScorchedEarthCard,
+      des: '0 / 128'
+    },
+    {
+      id: 3,
+      title: 'Riru The Center PVE',
+      cover: TheCenterCard,
+      des: '0 / 128'
+    },
+    {
+      id: 4,
+      title: 'Riru Aberration PVE',
+      cover: AberrationCard,
+      des: '0 / 128'
+    },
+    {
+      id: 5,
+      title: 'Riru Extinction PVE',
+      cover: ExtinctionCard,
+      des: '0 / 128'
+    }, {
+      id: 6,
+      title: 'Riru TheIs land PVP',
+      cover: TheIslandCard,
+      des: '0 / 128'
+    },
+    {
+      id: 7,
+      title: 'Riru Scorched Earth PVP',
+      cover: ScorchedEarthCard,
+      des: '0 / 128'
+    },
+    {
+      id: 8,
+      title: 'Riru The Center PVP',
+      cover: TheCenterCard,
+      des: '0 / 128'
+    },
+    {
+      id: 9,
+      title: 'Riru Aberration PVP',
+      cover: AberrationCard,
+      des: '0 / 128'
+    },
+    {
+      id: 10,
+      title: 'Riru Extinction PVP',
+      cover: ExtinctionCard,
+      des: '0 / 128'
+    }
   ])
 
   const [showServerCard, setShowServerCard] = useState<boolean>(false)
@@ -85,7 +147,7 @@ const Server: React.FC = () => {
         items={cards.map((item) => item.id)}
         strategy={rectSortingStrategy}
       >
-        <Row gutter={[24, 32]}>
+        <Row align='top' justify={'space-evenly'}>
           <div className="drag-container">
             {cards.map((item) => (
               <ServerCard key={item.id} item={item} onProfileClick={() => onServerCardClick(item)} />

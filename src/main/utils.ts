@@ -27,7 +27,7 @@ const getPublicIP = () => {
 
 function mkdirPath(pathStr: string): string {
   if (!fs.existsSync(pathStr)) {
-    fs.mkdir(pathStr, (err) => {
+    fs.mkdir(pathStr, { recursive: true }, (err) => {
       if (err) {
         console.log('mkdir ' + pathStr + ' failed: ' + err)
       } else {

@@ -20,6 +20,8 @@ import defaultProps from '@renderer/_defaultProps'
 import Server from '@renderer/pages/Server'
 import './App.css'
 
+import RiruHeader from '@renderer/common/images/riru.jpg'
+
 const useModal = () => {
   const [visible, setVisible] = useState(false)
 
@@ -74,7 +76,7 @@ function App(): JSX.Element {
     )
   }
 
-  if(window.mainApi){
+  if (window.mainApi) {
     window.mainApi.mainDownloadCallback((event, state, item) => {
       console.log(event)
       console.log(state)
@@ -82,7 +84,7 @@ function App(): JSX.Element {
     })
   }
 
-  if(window.mainApi){
+  if (window.mainApi) {
     window.mainApi.mainUnzipCallback((event, state, item) => {
       console.log(event)
       console.log(state)
@@ -129,7 +131,11 @@ function App(): JSX.Element {
           }
         }}
         theme="dark"
-        contentStyle={{ backgroundColor: 'aliceblue' }}
+        contentStyle={{
+          backgroundColor: 'aliceblue',
+          width: '100vw',
+          height: '100vh'
+        }}
         style={{ backgroundColor: 'aliceblue', width: '100vw' }}
         {...defaultProps}
         location={{
@@ -162,10 +168,24 @@ function App(): JSX.Element {
             width: '331px'
           }
         ]}
+        avatarProps={{
+          src: RiruHeader,
+          size: 'small',
+          title: 'RiruArk官方群',
+          onClick: () => {
+            window.open("https://qm.qq.com/q/YIeJpEMgM0")
+          }
+        }}
         actionsRender={(props) => {
           if (props.isMobile) return []
           return [
-            <QqOutlined key="GithubFilled" style={{ textAlign: 'center', color: '#dee2e6' }} />
+            <QqOutlined
+              key="GithubFilled"
+              style={{ textAlign: 'center', color: '#dee2e6' }}
+              onClick={() => {
+                window.open("https://qm.qq.com/q/YIeJpEMgM0")
+              }}
+            ></QqOutlined>
           ]
         }}
         menuFooterRender={(props) => {
@@ -197,7 +217,13 @@ function App(): JSX.Element {
         )}
       >
         <Header className="win-title-bar"></Header>
-        <PageContainer style={{ backgroundColor: 'aliceblue' }}>
+        <PageContainer
+          ghost
+          style={{
+            backgroundColor: 'aliceblue',
+            margin: 24,
+            minHeight: '100vh'
+          }}>
           <Server />
         </PageContainer>
       </ProLayout>
