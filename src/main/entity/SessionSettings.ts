@@ -1,7 +1,10 @@
 
 export class SessionSettings {
+    // 服务器端口
     Port: number
+    // 服务器查询端口
     QueryPort: number
+    // 服务器名称
     SessionName: string
 
     constructor() {
