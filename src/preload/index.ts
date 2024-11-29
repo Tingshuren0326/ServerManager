@@ -8,6 +8,9 @@ const api = {
   onUpdatePublicIP: (callback) => ipcRenderer.on('update-public-ip', callback),
   mainDownloadCallback: (callback) => ipcRenderer.on('watch-download-file-state',callback),
   mainUnzipCallback: (callback) => ipcRenderer.on('watch-unzip-file-state', callback),
+  openDirectoryDialog : (callback) => ipcRenderer.on('open-directory-dialog', callback),
+  openFileDialog : (callback) => ipcRenderer.on('open-file-dialog', callback),
+  
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to
